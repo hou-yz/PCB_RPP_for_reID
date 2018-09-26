@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 import argparse
 import os.path as osp
+import os
 
 import numpy as np
 import sys
@@ -17,6 +18,11 @@ from reid.utils.data import transforms as T
 from reid.utils.data.preprocessor import Preprocessor
 from reid.utils.logging import Logger
 from reid.utils.serialization import load_checkpoint, save_checkpoint
+import matplotlib
+
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import json
 
 def get_data(name, data_dir, height, width, batch_size, workers):
     root = osp.join(data_dir, name)
@@ -84,8 +90,8 @@ def  main(args):
 
 
     # Create model
-    model = models.create(args.arch, num_features=args.features,
-                          dropout=args.dropout, num_classes=num_classes,cut_at_pooling=False, FCN=True)
+    model = models.create('pcb', num_features=args.features,
+                          dropout=args.dropout, num_classes=num_classes,)
 
     # Load from checkpoint
     start_epoch = best_top1 = 0
@@ -139,16 +145,39 @@ def  main(args):
         for g in optimizer.param_groups:
             g['lr'] = lr * g.get('lr_mult', 1)
 
+    # Draw Curve
+    x_epoch = []
+    fig = plt.figure()
+    ax0 = fig.add_subplot(121, title="loss")
+    ax1 = fig.add_subplot(122, title="prec")
+
+    loss_s = []
+    prec_s = []
+
+    def draw_curve(current_epoch, train_loss, train_prec):
+        x_epoch.append(current_epoch)
+        ax0.plot(x_epoch, train_loss, 'bo-', label='train')
+        ax1.plot(x_epoch, train_prec, 'bo-', label='train')
+        # ax0.plot(x_epoch, eval_loss, 'ro-', label='eval')
+        # ax1.plot(x_epoch, eval_prec, 'ro-', label='eval')
+        if current_epoch == 0:
+            ax0.legend()
+            ax1.legend()
+        fig.savefig(os.path.join(args.logs_dir, 'train.jpg'))
+
     # Start training
     for epoch in range(start_epoch, args.epochs):
         adjust_lr(epoch)
-        trainer.train(epoch, train_loader, optimizer)
+        train_loss, train_prec = trainer.train(epoch, train_loader, optimizer)
         is_best = True
         save_checkpoint({
             'state_dict': model.module.state_dict(),
             'epoch': epoch + 1,
             'best_top1': best_top1,
         }, is_best, fpath=osp.join(args.logs_dir, 'checkpoint.pth.tar'))
+        loss_s.append(train_loss)
+        prec_s.append(train_prec)
+        draw_curve(epoch, loss_s, prec_s)
 
     # Final test
     print('Test with best model:')

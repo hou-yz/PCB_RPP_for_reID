@@ -37,7 +37,7 @@ class BaseTrainer(object):
             precisions.update(prec1, targets.size(0))
 
             optimizer.zero_grad()
-            torch.autograd.backward([ loss0, loss1, loss2, loss3, loss4, loss5],[torch.ones(1).cuda(), torch.ones(1).cuda(), torch.ones(1).cuda(),torch.ones(1).cuda(),torch.ones(1).cuda(),torch.ones(1).cuda(),torch.ones(1).cuda()]) 
+            torch.autograd.backward([ loss0, loss1, loss2, loss3, loss4, loss5],[torch.ones(()).cuda(), torch.ones(()).cuda(), torch.ones(()).cuda(),torch.ones(()).cuda(),torch.ones(()).cuda(),torch.ones(()).cuda()])
             optimizer.step()
 
             batch_time.update(time.time() - end)
@@ -53,6 +53,7 @@ class BaseTrainer(object):
 							  )
             bar.next()
         bar.finish()
+        return losses.avg, precisions.avg
 
 
 
