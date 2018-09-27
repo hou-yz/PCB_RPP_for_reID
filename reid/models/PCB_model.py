@@ -113,4 +113,4 @@ class PCB_model(nn.Module):
         c3 = self.instance3(x3)
         c4 = self.instance4(x4)
         c5 = self.instance5(x5)
-        return out0, (c0, c1, c2, c3, c4, c5)
+        return out1, (c0, c1, c2, c3, c4, c5)
